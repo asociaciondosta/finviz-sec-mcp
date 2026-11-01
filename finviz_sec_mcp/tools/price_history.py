@@ -1,5 +1,5 @@
 """
-Price History Tools — annual high/low/average from Yahoo Finance.
+Price History Tools — annual and monthly high/low/close from Yahoo Finance.
 
 Data source: Yahoo Finance via yfinance (free, no API key).
 """
@@ -67,4 +67,56 @@ def register_price_history_tools(server):
 
         except Exception as e:
             logger.error(f"get_annual_price_history error: {e}")
+            return [TextContent(type="text", text=f"Error: {e}")]
+
+    @server.tool()
+    def get_monthly_price_history(
+        ticker: str,
+        years: int = 10,
+    ) -> List[TextContent]:
+        """Get monthly high, low, and close prices for a stock.
+        Returns one row per calendar month with the highest intraday price,
+        lowest intraday price, and the last close of the month (the current
+        month is partial). Useful for price charts and drawdowns.
+
+        Data source: Yahoo Finance (free, no API key). Prices are
+        split-adjusted, not dividend-adjusted.
+
+        Args:
+            ticker: Stock ticker symbol (e.g. "AAPL", "MSFT").
+            years: Number of years of history to fetch (default 10).
+        """
+        try:
+            data = yf_client.get_monthly_price_history(ticker, years=years)
+
+            if not data:
+                return [TextContent(
+                    type="text",
+                    text=f"No price history found for {ticker.upper()}. "
+                         f"Check that the ticker symbol is correct.",
+                )]
+
+            rows = data["rows"]
+
+            lines = [
+                f"Monthly Price History: {ticker.upper()}",
+                f"Source: Yahoo Finance (split-adjusted)",
+                "=" * 52,
+                "",
+                f"{'Month':<10}{'High':>14}{'Low':>14}{'Close':>14}",
+                "-" * 52,
+            ]
+
+            for r in rows:
+                lines.append(
+                    f"{r['month']:<10}"
+                    f"{'${:,.2f}'.format(r['high']):>14}"
+                    f"{'${:,.2f}'.format(r['low']):>14}"
+                    f"{'${:,.2f}'.format(r['close']):>14}"
+                )
+
+            return [TextContent(type="text", text="\n".join(lines))]
+
+        except Exception as e:
+            logger.error(f"get_monthly_price_history error: {e}")
             return [TextContent(type="text", text=f"Error: {e}")]

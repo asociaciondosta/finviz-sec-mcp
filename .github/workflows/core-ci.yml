@@ -57,6 +57,7 @@ jobs:
               "get_financial_ttm",
               "get_stock_news",
               "get_annual_price_history",
+              "get_monthly_price_history",
               "get_inputs_tab_data",
           }
 
